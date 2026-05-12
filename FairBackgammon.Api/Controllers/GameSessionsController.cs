@@ -66,12 +66,7 @@ namespace FairBackgammon.Api.Controllers
         return NotFound("Game session not found.");
       }
 
-      return Ok(
-        new
-        {
-          Players = activeGame.Players,
-          Board = activeGame.GetGameSession?.BoardState
-        });
+      return GameStateResponse(activeGame);
     }
 
     [HttpPost("{gameId}/roll")]
@@ -110,12 +105,58 @@ namespace FairBackgammon.Api.Controllers
         return BadRequest("Invalid move.");
       }
 
-      return Ok(
-       new
-       {
-         Players = activeGame.Players,
-         Board = activeGame.GetGameSession?.BoardState
-       });
+      return GameStateResponse(activeGame);
+    }
+
+    [HttpPost("{gameId}/rematch")]
+    public ActionResult RequestRematch(string gameId)
+    {
+      if (!GameConnector.ActiveGames.TryGetValue(gameId, out var activeGame))
+      {
+        return NotFound("Game session not found.");
+      }
+
+      if (activeGame.GetGameSession == null)
+      {
+        return BadRequest("Game session has not started yet.");
+      }
+
+      if (activeGame.RematchRequests.Count >= 2)
+      {
+        return BadRequest("Rematch already requested by both players.");
+      }
+
+      if (activeGame.GetGameSession.BoardState.Winner == null)
+      {
+        return BadRequest("Game is not finished yet.");
+      }
+
+      string userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? throw new InvalidOperationException("User ID claim is missing.");
+      activeGame.RematchRequests.Add(userId);
+
+      lock (activeGame)
+      {
+        if (activeGame.RematchRequests.Count == 2)
+        {
+          activeGame.Players[activeGame.RematchRequests.ElementAt(0)] = activeGame.Players[activeGame.RematchRequests.ElementAt(0)].Opponent();
+          activeGame.Players[activeGame.RematchRequests.ElementAt(1)] = activeGame.Players[activeGame.RematchRequests.ElementAt(1)].Opponent();
+
+          activeGame.GetGameSession = Backgammon.StartNewGame();
+          activeGame.RematchRequests.Clear();
+        }
+      }
+
+      return GameStateResponse(activeGame);
+    }
+
+    private OkObjectResult GameStateResponse(ActiveGame activeGame)
+    {
+      return Ok(new
+      {
+        Players = activeGame.Players,
+        Board = activeGame.GetGameSession?.BoardState,
+        activeGame.RematchRequests
+      });
     }
   }
 }
