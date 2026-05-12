@@ -144,15 +144,15 @@ namespace FairBackgammon.Desktop
         .OrderBy(p => p.Index)
         .ToDictionary(p => p.Index, p => p);
 
-      // Top row: points 12..23
-      for (var i = 12; i < 24; i++)
+      // Top row: points 13..25
+      for (var i = 13; i < 25; i++)
       {
         var point = points[i];
         TopPointsGrid.Children.Add(CreatePointCell(i, point.Count, point.Type));
       }
 
-      // Bottom row: points 11..0
-      for (var i = 11; i >= 0; i--)
+      // Bottom row: points 12..1
+      for (var i = 12; i >= 1; i--)
       {
         var point = points[i];
         BottomPointsGrid.Children.Add(CreatePointCell(i, point.Count, point.Type));
@@ -184,7 +184,7 @@ namespace FairBackgammon.Desktop
 
       panel.Children.Add(new TextBlock
       {
-        Text = (index + 1).ToString(CultureInfo.InvariantCulture),
+        Text = index.ToString(CultureInfo.InvariantCulture),
         FontSize = 12,
         Opacity = 0.75,
         Margin = new Thickness(0, 0, 0, 4)
@@ -258,7 +258,7 @@ namespace FairBackgammon.Desktop
 
     private static string FormatMove((int, int)[] move)
     {
-      return string.Join("; ", move.Select(p => $"{p.Item1 + 1}-{p.Item2 + 1}"));
+      return string.Join("; ", move.Select(p => $"{p.Item1}-{p.Item2}"));
     }
 
     private static (int, int)[] ParseMove(string text)
@@ -284,8 +284,8 @@ namespace FairBackgammon.Desktop
           throw new FormatException($"Invalid move segment '{pair}'. Expected 'from-to'.");
         }
 
-        var from = int.Parse(fromTo[0], CultureInfo.InvariantCulture) - 1;
-        var to = int.Parse(fromTo[1], CultureInfo.InvariantCulture) - 1;
+        var from = int.Parse(fromTo[0], CultureInfo.InvariantCulture);
+        var to = int.Parse(fromTo[1], CultureInfo.InvariantCulture);
         moves.Add((from, to));
       }
 

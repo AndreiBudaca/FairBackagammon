@@ -85,7 +85,7 @@ namespace FairBackgammon.GameLogic.Moves.Simulation
       }
       else
       {
-        return Board.Points[index];
+        return Board.Points[index - 1];
       }
     }
   }

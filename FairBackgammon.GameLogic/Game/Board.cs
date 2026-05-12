@@ -25,9 +25,9 @@ namespace FairBackgammon.GameLogic.Game
       foreach (var pointSetup in boardSetup.Setup())
       {
         ArgumentOutOfRangeException.ThrowIfNegative(pointSetup.PointIndex);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(pointSetup.PointIndex, BoardConstants.TOTAL_POINTS - 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(pointSetup.PointIndex, BoardConstants.TOTAL_POINTS);
 
-        Points[pointSetup.PointIndex] = new CheckerHolder(pointSetup.InitialCheckers, pointSetup.CheckerType);
+        Points[pointSetup.PointIndex - 1] = new CheckerHolder(pointSetup.InitialCheckers, pointSetup.CheckerType);
       }
     }
 

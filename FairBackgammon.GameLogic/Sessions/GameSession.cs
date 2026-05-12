@@ -20,7 +20,7 @@ namespace FairBackgammon.GameLogic.Sessions
       get => new()
       {
         Dice = _playerRolled ? [_dice.Current.Item1, _dice.Current.Item2] : [],
-        Points = _board.Points.Select((p, i) => new PointState { Index = i, Count = p.Count, Type = p.CheckerType }),
+        Points = _board.Points.Select((p, i) => new PointState { Index = i + 1, Count = p.Count, Type = p.CheckerType }),
         Bar = _board.Bar.Select(b => new HolderState { Count = b.Count, Type = b.CheckerType }),
         Off = _board.Bearoff.Select(b => new HolderState { Count = b.Count, Type = b.CheckerType }),
         CurrentPlayer = (int)CurrentPlayer,
@@ -57,7 +57,7 @@ namespace FairBackgammon.GameLogic.Sessions
         throw new InvalidOperationException("Player must roll before making a move.");
       }
 
-      var isValidMove = moveValidator.IsMoveValid(move);
+      var isValidMove = moveValidator.IsMoveValid(move, CurrentPlayer);
       if (!isValidMove) return false;
 
       var moveMade = _board.TryMakeMove(move, CurrentPlayer);

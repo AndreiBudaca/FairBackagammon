@@ -6,15 +6,15 @@ namespace FairBackgammon.GameLogic.BoardSetup
     {
       return 
       [
-        new PointSetup { PointIndex = 23, InitialCheckers = 2, CheckerType = Enums.CheckerType.White },
-        new PointSetup { PointIndex = 12, InitialCheckers = 5, CheckerType = Enums.CheckerType.White },
-        new PointSetup { PointIndex = 7, InitialCheckers = 3, CheckerType = Enums.CheckerType.White },
-        new PointSetup { PointIndex = 5, InitialCheckers = 5, CheckerType = Enums.CheckerType.White },
+        new PointSetup { PointIndex = 24, InitialCheckers = 2, CheckerType = Enums.CheckerType.White },
+        new PointSetup { PointIndex = 13, InitialCheckers = 5, CheckerType = Enums.CheckerType.White },
+        new PointSetup { PointIndex = 8, InitialCheckers = 3, CheckerType = Enums.CheckerType.White },
+        new PointSetup { PointIndex = 6, InitialCheckers = 5, CheckerType = Enums.CheckerType.White },
         
-        new PointSetup { PointIndex = 0, InitialCheckers = 2, CheckerType = Enums.CheckerType.Black },
-        new PointSetup { PointIndex = 11, InitialCheckers = 5, CheckerType = Enums.CheckerType.Black },
-        new PointSetup { PointIndex = 16, InitialCheckers = 3, CheckerType = Enums.CheckerType.Black },
-        new PointSetup { PointIndex = 18, InitialCheckers = 5, CheckerType = Enums.CheckerType.Black }
+        new PointSetup { PointIndex = 1, InitialCheckers = 2, CheckerType = Enums.CheckerType.Black },
+        new PointSetup { PointIndex = 12, InitialCheckers = 5, CheckerType = Enums.CheckerType.Black },
+        new PointSetup { PointIndex = 17, InitialCheckers = 3, CheckerType = Enums.CheckerType.Black },
+        new PointSetup { PointIndex = 19, InitialCheckers = 5, CheckerType = Enums.CheckerType.Black }
       ];
     }
   }
