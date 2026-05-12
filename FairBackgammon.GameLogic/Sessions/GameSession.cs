@@ -1,15 +1,16 @@
 using FairBackgammon.GameLogic.BoardSetup;
-using FairBackgammon.GameLogic.Constants;
 using FairBackgammon.GameLogic.Enums;
 using FairBackgammon.GameLogic.Game;
 using FairBackgammon.GameLogic.Moves.Validation;
+using FairBackgammon.GameLogic.Moves.Winning;
 using FairBackgammon.GameLogic.Sessions.State;
 
 namespace FairBackgammon.GameLogic.Sessions
 {
-  public class GameSession(IBoardSetup boardSetup, IMoveValidator moveValidator)
+  public class GameSession(IBoardSetup boardSetup, IMoveValidator moveValidator, IWinChecker winChecker)
   {
     private readonly IMoveValidator moveValidator = moveValidator;
+    private readonly IWinChecker winChecker = winChecker;
     private readonly Board _board = new(boardSetup);
     private readonly Dice _dice = new();
     private bool _playerRolled = false;
@@ -24,7 +25,7 @@ namespace FairBackgammon.GameLogic.Sessions
         Bar = _board.Bar.Select(b => new HolderState { Count = b.Count, Type = b.CheckerType }),
         Off = _board.Bearoff.Select(b => new HolderState { Count = b.Count, Type = b.CheckerType }),
         CurrentPlayer = (int)CurrentPlayer,
-        Winner = GetWinner()
+        Winner = GetWinner(),
       };
     }
 
@@ -83,10 +84,9 @@ namespace FairBackgammon.GameLogic.Sessions
 
     private int? GetWinner()
     {
-      if (_board.Bearoff[0].Count == BoardConstants.MAX_CHECKERS_PER_POINT) return 0;
-      if (_board.Bearoff[1].Count == BoardConstants.MAX_CHECKERS_PER_POINT) return 1;
-
-      return null;
+      var winStatus = winChecker.IsWinning(_board, CurrentPlayer);
+      if (winStatus == 0) return null;
+      return CurrentPlayer == CheckerType.White ? winStatus : -winStatus;
     }
   }
 }
