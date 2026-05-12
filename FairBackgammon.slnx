@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="FairBackgammon.GameLogic/FairBackgammon.GameLogic.csproj" />
+  <Project Path="FairBackgammon.Api/FairBackgammon.Api.csproj" />
+  <Project Path="FairBackgammon.Desktop/FairBackgammon.Desktop.csproj" />
+</Solution>

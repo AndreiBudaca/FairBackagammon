@@ -1,0 +1,6 @@
+@FairBackgammon.Api_HostAddress = http://localhost:5075
+
+GET {{FairBackgammon.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
