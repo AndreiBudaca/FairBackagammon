@@ -36,12 +36,24 @@ namespace FairBackgammon.GameLogic.Sessions
       }
 
       var diceValue = _dice.Roll();
-      _playerRolled = true;
+      var validMoves = moveValidator.LoadValidMoves(_board, diceValue, CurrentPlayer);
 
+      if (validMoves.Count == 0)
+      {
+        // No valid moves, end turn immediately
+        CurrentPlayer = CurrentPlayer.Opponent();
+        return new SessionState
+        {
+          Dice = diceValue,
+          ValidMoves = []
+        };
+      }
+
+      _playerRolled = true;
       return new SessionState
       {
         Dice = diceValue,
-        ValidMoves = moveValidator.LoadValidMoves(_board, diceValue, CurrentPlayer)
+        ValidMoves = validMoves
       };
     }
 

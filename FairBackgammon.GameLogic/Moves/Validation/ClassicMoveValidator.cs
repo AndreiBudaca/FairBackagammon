@@ -61,7 +61,15 @@ namespace FairBackgammon.GameLogic.Moves.Validation
       foreach (var move in firstPointMoves)
       {
         var checkpoint = simulator.CreateCheckpoint();
-        simulator.SimulateMove(move, player);
+        try
+        {
+          simulator.SimulateMove(move, player);
+        }
+        catch
+        {
+          simulator.UndoToCheckpoint(checkpoint);
+          continue; // Invalid move, skip to the next one
+        }
 
         if (pointsToMove.Length == depth + 1)
         {
@@ -71,7 +79,7 @@ namespace FairBackgammon.GameLogic.Moves.Validation
         {
           foreach (var subsequentMoves in GenerateMoveCombinations(simulator, pointsToMove, depth + 1, player))
           {
-            yield return new[] { move }.Concat(subsequentMoves);
+            yield return subsequentMoves.Append(move);
           }
         }
 
@@ -92,15 +100,15 @@ namespace FairBackgammon.GameLogic.Moves.Validation
         // Bar moves are mandatory, so if we have any, we don't consider other moves
         yield break;
       }
+      
+      foreach (var onBoardMove in GetPossibleMovesOnBoard(board, pointsToMove, player))
+      {
+        yield return onBoardMove;
+      }
 
       foreach (var bearoffMove in GetPossibleMovesToBearOff(board, pointsToMove, player))
       {
         yield return bearoffMove;
-      }
-
-      foreach (var onBoardMove in GetPossibleMovesOnBoard(board, pointsToMove, player))
-      {
-        yield return onBoardMove;
       }
     }
 
@@ -110,7 +118,7 @@ namespace FairBackgammon.GameLogic.Moves.Validation
         BoardConstants.TOTAL_POINTS - pointsToMove + 1 :
         pointsToMove;
 
-      if (board.Points[entryPointIndex].Count <= 1 || board.Points[entryPointIndex].CheckerType == player)
+      if (board.Points[entryPointIndex - 1].Count <= 1 || board.Points[entryPointIndex - 1].CheckerType == player)
       {
         return [(BoardConstants.BAR_INDEX, entryPointIndex)];
       }
@@ -125,7 +133,7 @@ namespace FairBackgammon.GameLogic.Moves.Validation
       var checkersInHomeBoard = board.Points.Skip(homeBoardStart - 1).Take(6)
         .Where(p => p.CheckerType == player).Sum(p => p.Count);
 
-      if (checkersInHomeBoard + board.Bearoff[(int)player].Count < BoardConstants.MAX_CHECKERS_PER_POINT)
+      if (checkersInHomeBoard == 0 || checkersInHomeBoard + board.Bearoff[(int)player].Count < BoardConstants.MAX_CHECKERS_PER_POINT)
       {
         yield break; // Can't bear off if not all checkers are in the home board
       }
@@ -210,9 +218,18 @@ namespace FairBackgammon.GameLogic.Moves.Validation
     {
       return checkerType switch
       {
-        CheckerType.White => move.OrderByDescending(m => m.Item1).ThenByDescending(m => m.Item2),
-        CheckerType.Black => move.OrderBy(m => m.Item1).ThenBy(m => m.Item2),
+        CheckerType.White => move.OrderByDescending(m => SortPointValue(m.Item1, checkerType)).ThenByDescending(m => SortPointValue(m.Item2, checkerType)),
+        CheckerType.Black => move.OrderBy(m => SortPointValue(m.Item1, checkerType)).ThenBy(m => SortPointValue(m.Item2, checkerType)),
         _ => throw new ArgumentException("Invalid checker type."),
+      };
+    }
+
+    public static int SortPointValue(int point, CheckerType checkerType)
+    {
+      return point switch
+      {
+        BoardConstants.BAR_INDEX => checkerType == CheckerType.White ? int.MaxValue : int.MinValue,
+        _ => point
       };
     }
   }

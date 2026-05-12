@@ -12,9 +12,7 @@
     <StackPanel Orientation="Horizontal" Grid.Row="0">
       <Button x:Name="StartNewGameButton" Content="Start New Game" Padding="12,6" Margin="0,0,8,0" Click="StartNewGameButton_OnClick" />
       <Button x:Name="RollButton" Content="Roll" Padding="12,6" Margin="0,0,8,0" Click="RollButton_OnClick" />
-
-      <TextBlock Text="Move:" VerticalAlignment="Center" Margin="8,0,6,0" />
-      <TextBox x:Name="MoveTextBox" Width="280" VerticalAlignment="Center" Margin="0,0,8,0" ToolTip="Example: 0-5; 11-16" />
+      <Button x:Name="MakeFirstMoveButton" Content="Make first move" Padding="12,6" Margin="0,0,8,0" Click="MakeFirstMoveButton_OnClick" />
       <Button x:Name="MakeMoveButton" Content="Make Move" Padding="12,6" Click="MakeMoveButton_OnClick" />
     </StackPanel>
 
@@ -57,15 +55,40 @@
         </ScrollViewer>
       </Border>
 
-      <TextBox x:Name="StateTextBox"
-               Grid.Column="1"
-               Margin="12,0,0,0"
-               FontFamily="Consolas"
-               FontSize="14"
-               IsReadOnly="True"
-               TextWrapping="NoWrap"
-               VerticalScrollBarVisibility="Auto"
-               HorizontalScrollBarVisibility="Auto" />
+      <Grid Grid.Column="1" Margin="12,0,0,0">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" BorderBrush="#22000000" BorderThickness="1" Padding="8" Margin="0,0,0,8">
+          <StackPanel>
+            <TextBlock Text="Valid moves" FontWeight="Bold" Margin="0,0,0,6" />
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Height="140">
+              <ListBox x:Name="ValidMovesListBox" BorderThickness="0">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <CheckBox Content="{Binding DisplayText}"
+                              IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              Checked="ValidMoveCheckBox_OnChecked"
+                              Unchecked="ValidMoveCheckBox_OnUnchecked" />
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </ScrollViewer>
+          </StackPanel>
+        </Border>
+
+        <TextBox x:Name="StateTextBox"
+                 Grid.Row="1"
+                 FontFamily="Consolas"
+                 FontSize="14"
+                 IsReadOnly="True"
+                 TextWrapping="NoWrap"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto" />
+      </Grid>
     </Grid>
 
     <Border Grid.Row="2" Background="#11FFFFFF" BorderBrush="#22000000" BorderThickness="1" Padding="8">

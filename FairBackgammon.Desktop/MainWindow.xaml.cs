@@ -1,9 +1,13 @@
 using System.Globalization;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using FairBackgammon.GameLogic;
 using FairBackgammon.GameLogic.Enums;
 using FairBackgammon.GameLogic.Sessions;
@@ -16,9 +20,14 @@ namespace FairBackgammon.Desktop
     private GameSession? _session;
     private SessionState? _lastState;
 
+    private bool _isAutoPlaying;
+
+    private readonly ObservableCollection<ValidMoveItem> _validMoves = new();
+
     public MainWindow()
     {
       InitializeComponent();
+      ValidMovesListBox.ItemsSource = _validMoves;
       UpdateUi("Ready");
     }
 
@@ -50,14 +59,69 @@ namespace FairBackgammon.Desktop
       }
     }
 
+    private async void MakeFirstMoveButton_OnClick(object sender, RoutedEventArgs e)
+    {
+      if (_isAutoPlaying) return;
+      _isAutoPlaying = true;
+
+      try
+      {
+        EnsureSession();
+
+        while (_session is not null && _session.BoardState.Winner is null)
+        {
+          RollButton_OnClick(sender, e);
+          await Dispatcher.Yield(DispatcherPriority.Background);
+
+          SelectRandomValidMoveIfAny();
+          await Dispatcher.Yield(DispatcherPriority.Background);
+
+          MakeMoveButton_OnClick(sender, e);
+          await Dispatcher.Yield(DispatcherPriority.Background);
+
+          await Task.Delay(0); // Small delay to allow UI to update between moves
+        }
+      }
+      catch (Exception ex)
+      {
+        UpdateUi($"Error: {ex.Message}");
+      }
+      finally
+      {
+        _isAutoPlaying = false;
+      }
+    }
+
+    private void SelectRandomValidMoveIfAny()
+    {
+      if (_validMoves.Count == 0) return;
+
+      var index = Random.Shared.Next(_validMoves.Count);
+      for (var i = 0; i < _validMoves.Count; i++)
+      {
+        _validMoves[i].IsSelected = i == index;
+      }
+    }
+
     private void MakeMoveButton_OnClick(object sender, RoutedEventArgs e)
     {
       try
       {
         EnsureSession();
 
-        var move = ParseMove(MoveTextBox.Text);
-        var ok = _session!.MakeMove(move);
+        var selectedMove = _validMoves.FirstOrDefault(m => m.IsSelected)?.Move;
+        if (selectedMove is null)
+        {
+          if (_validMoves.Count == 0)
+          {
+            UpdateUi("No valid moves. Ending turn.");
+            return; // No valid moves, nothing to do
+          }
+
+          throw new InvalidOperationException("No valid move is selected. Roll first, then select a move.");
+        }
+
+        var ok = _session!.MakeMove(selectedMove);
 
         UpdateUi(ok ? "Move accepted" : "Move rejected (TryMakeMove returned false)");
       }
@@ -65,6 +129,26 @@ namespace FairBackgammon.Desktop
       {
         UpdateUi($"Error: {ex.Message}");
       }
+    }
+
+    private void ValidMoveCheckBox_OnChecked(object sender, RoutedEventArgs e)
+    {
+      if (sender is not CheckBox checkBox) return;
+      if (checkBox.DataContext is not ValidMoveItem selected) return;
+
+      foreach (var item in _validMoves)
+      {
+        item.IsSelected = ReferenceEquals(item, selected);
+      }
+    }
+
+    private void ValidMoveCheckBox_OnUnchecked(object sender, RoutedEventArgs e)
+    {
+      if (_validMoves.Count == 0) return;
+      if (_validMoves.Any(m => m.IsSelected)) return;
+
+      // Keep one selected at all times when options exist.
+      _validMoves[0].IsSelected = true;
     }
 
     private void EnsureSession()
@@ -77,7 +161,16 @@ namespace FairBackgammon.Desktop
 
     private void UpdateUi(string status)
     {
-      StatusTextBlock.Text = status;
+      var winner = _session?.BoardState.Winner;
+      if (winner is null)
+      {
+        StatusTextBlock.Text = status;
+      }
+      else
+      {
+        var winnerName = winner.Value == (int)CheckerType.White ? "White" : "Black";
+        StatusTextBlock.Text = $"Game over! Winner: {winnerName}";
+      }
 
       var sb = new StringBuilder();
 
@@ -89,11 +182,20 @@ namespace FairBackgammon.Desktop
         sb.AppendLine("Session: <none>");
         StateTextBox.Text = sb.ToString();
 
+        _validMoves.Clear();
+
         ClearBoard();
         return;
       }
 
       RenderBoard(_session.BoardState);
+
+      if (_session.BoardState.Winner is not null)
+      {
+        var winnerName = _session.BoardState.Winner.Value == (int)CheckerType.White ? "White" : "Black";
+        sb.AppendLine($"Winner: {winnerName}");
+        sb.AppendLine();
+      }
 
       sb.AppendLine($"Current player: {_session.CurrentPlayer}");
 
@@ -101,6 +203,8 @@ namespace FairBackgammon.Desktop
       {
         sb.AppendLine("Last roll: <none>");
         sb.AppendLine("Valid moves: <none>");
+
+        _validMoves.Clear();
       }
       else
       {
@@ -108,6 +212,8 @@ namespace FairBackgammon.Desktop
 
         var validMoves = _lastState.ValidMoves?.ToArray() ?? [];
         sb.AppendLine($"Valid moves count: {validMoves.Length}");
+
+        UpdateValidMoves(validMoves);
 
         var preview = validMoves.ToArray();
         if (preview.Length > 0)
@@ -122,10 +228,24 @@ namespace FairBackgammon.Desktop
       }
 
       sb.AppendLine();
-      sb.AppendLine("Move input format: from-to; from-to; ...");
-      sb.AppendLine("Example: 0-5; 11-16");
+      sb.AppendLine("Move selection: pick one from the Valid moves list.");
 
       StateTextBox.Text = sb.ToString();
+    }
+
+    private void UpdateValidMoves((int, int)[][] validMoves)
+    {
+      _validMoves.Clear();
+
+      foreach (var move in validMoves)
+      {
+        _validMoves.Add(new ValidMoveItem(FormatMove(move), move));
+      }
+
+      if (_validMoves.Count > 0)
+      {
+        _validMoves[0].IsSelected = true;
+      }
     }
 
     private void ClearBoard()
@@ -259,6 +379,38 @@ namespace FairBackgammon.Desktop
     private static string FormatMove((int, int)[] move)
     {
       return string.Join("; ", move.Select(p => $"{p.Item1}-{p.Item2}"));
+    }
+
+    private sealed class ValidMoveItem : INotifyPropertyChanged
+    {
+      private bool _isSelected;
+
+      public ValidMoveItem(string displayText, (int, int)[] move)
+      {
+        DisplayText = displayText;
+        Move = move;
+      }
+
+      public string DisplayText { get; }
+      public (int, int)[] Move { get; }
+
+      public bool IsSelected
+      {
+        get => _isSelected;
+        set
+        {
+          if (value == _isSelected) return;
+          _isSelected = value;
+          OnPropertyChanged();
+        }
+      }
+
+      public event PropertyChangedEventHandler? PropertyChanged;
+
+      private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+      {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+      }
     }
 
     private static (int, int)[] ParseMove(string text)
