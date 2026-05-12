@@ -1,4 +1,5 @@
 using FairBackgammon.GameLogic.BoardSetup;
+using FairBackgammon.GameLogic.Constants;
 using FairBackgammon.GameLogic.Enums;
 using FairBackgammon.GameLogic.Game;
 using FairBackgammon.GameLogic.Moves.Validation;
@@ -23,7 +24,7 @@ namespace FairBackgammon.GameLogic.Sessions
         Bar = _board.Bar.Select(b => new HolderState { Count = b.Count, Type = b.CheckerType }),
         Off = _board.Bearoff.Select(b => new HolderState { Count = b.Count, Type = b.CheckerType }),
         CurrentPlayer = (int)CurrentPlayer,
-        Winner = null // TODO: Implement winner logic
+        Winner = GetWinner()
       };
     }
 
@@ -46,6 +47,11 @@ namespace FairBackgammon.GameLogic.Sessions
 
     public bool MakeMove((int, int)[] move)
     {
+      if (GetWinner() != null)
+      {
+        throw new InvalidOperationException("Game is already over.");
+      }
+
       if (!_playerRolled)
       {
         throw new InvalidOperationException("Player must roll before making a move.");
@@ -61,6 +67,14 @@ namespace FairBackgammon.GameLogic.Sessions
       CurrentPlayer = CurrentPlayer.Opponent();
       
       return true;
+    }
+
+    private int? GetWinner()
+    {
+      if (_board.Bearoff[0].Count == BoardConstants.MAX_CHECKERS_PER_POINT) return 0;
+      if (_board.Bearoff[1].Count == BoardConstants.MAX_CHECKERS_PER_POINT) return 1;
+
+      return null;
     }
   }
 }
