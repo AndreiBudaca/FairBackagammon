@@ -1,9 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using FairBackgammon.Api.Connectors;
 using FairBackgammon.GameLogic;
+using FairBackgammon.GameLogic.BoardSetup;
 using FairBackgammon.GameLogic.Enums;
+using FairBackgammon.GameLogic.Sessions;
+using FairBackgammon.GameLogic.Sessions.State;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,14 +19,16 @@ namespace FairBackgammon.Api.Controllers
   public sealed class GameSessionsController : ControllerBase
   {
     [HttpPost]
-    public ActionResult CreateGameSession()
+    public ActionResult CreateGameSession([FromBody] List<PointState> initialBoard)
     {
       var gameId = Guid.NewGuid().ToString();
+      initialBoard ??= [];
 
       var gameCreated = GameConnector.ActiveGames.TryAdd(gameId, new ActiveGame
       {
         Players = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).ToDictionary(c => c.Value, c => CheckerType.White),
         Score = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).ToDictionary(c => c.Value, c => 0),
+        InitialBoard = initialBoard,
       });
 
       if (!gameCreated)
@@ -55,7 +61,7 @@ namespace FairBackgammon.Api.Controllers
 
       activeGame.Players[userId] = CheckerType.Black;
       activeGame.Score[userId] = 0;
-      activeGame.GetGameSession = Backgammon.StartNewGame();
+      activeGame.GetGameSession = NewGame(activeGame.InitialBoard);
 
       return Ok();
     }
@@ -178,8 +184,8 @@ namespace FairBackgammon.Api.Controllers
         {
           activeGame.Players[activeGame.RematchRequests.ElementAt(0)] = activeGame.Players[activeGame.RematchRequests.ElementAt(0)].Opponent();
           activeGame.Players[activeGame.RematchRequests.ElementAt(1)] = activeGame.Players[activeGame.RematchRequests.ElementAt(1)].Opponent();
-
-          activeGame.GetGameSession = Backgammon.StartNewGame();
+          
+          activeGame.GetGameSession = NewGame(activeGame.InitialBoard);
           activeGame.RematchRequests.Clear();
         }
       }
@@ -195,6 +201,15 @@ namespace FairBackgammon.Api.Controllers
         Board = activeGame.GetGameSession?.BoardState,
         activeGame.RematchRequests
       });
+    }
+
+    private static GameSession NewGame(List<PointState> initialBoard)
+    {
+      var boardInitializer = initialBoard.Count > 0 ? 
+        new CustomBoardSetup(initialBoard.Select(p => new PointSetup { PointIndex = p.Index, InitialCheckers = p.Count, CheckerType = p.Type })) :
+        null;
+
+      return Backgammon.StartNewGame(boardSetup: boardInitializer);
     }
   }
 }
