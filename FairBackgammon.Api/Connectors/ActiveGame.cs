@@ -8,6 +8,8 @@ namespace FairBackgammon.Api.Connectors
   {
     public required Dictionary<string, CheckerType> Players { get; init; }
 
+    public required Dictionary<string, int> Score { get; init; }
+
     public HashSet<string> RematchRequests { get; } = [];
 
     public GameSession? GetGameSession { get; set; }

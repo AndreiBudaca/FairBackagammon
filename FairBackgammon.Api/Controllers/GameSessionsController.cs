@@ -21,7 +21,8 @@ namespace FairBackgammon.Api.Controllers
 
       var gameCreated = GameConnector.ActiveGames.TryAdd(gameId, new ActiveGame
       {
-        Players = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).ToDictionary(c => c.Value, c => CheckerType.White)
+        Players = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).ToDictionary(c => c.Value, c => CheckerType.White),
+        Score = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).ToDictionary(c => c.Value, c => 0),
       });
 
       if (!gameCreated)
@@ -53,6 +54,7 @@ namespace FairBackgammon.Api.Controllers
       }
 
       activeGame.Players[userId] = CheckerType.Black;
+      activeGame.Score[userId] = 0;
       activeGame.GetGameSession = Backgammon.StartNewGame();
 
       return Ok();
@@ -113,6 +115,12 @@ namespace FairBackgammon.Api.Controllers
       if (!validMove)
       {
         return BadRequest("Invalid move.");
+      }
+      
+      if (gameSession.BoardState.Winner != null)
+      {
+        var winningColor = gameSession.BoardState.Winner.Value > 0 ? CheckerType.White : CheckerType.Black;
+        activeGame.Score[activeGame.Players.FirstOrDefault(p => p.Value == winningColor).Key]+= Math.Abs(gameSession.BoardState.Winner.Value);
       }
 
       return GameStateResponse(activeGame);
