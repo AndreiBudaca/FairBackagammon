@@ -89,17 +89,27 @@ namespace FairBackgammon.Api.Controllers
     }
 
     [HttpPost("{gameId}/move")]
-    public ActionResult MakeMove(string gameId, [FromBody] (int from, int to)[] move)
+    public ActionResult MakeMove(string gameId, [FromBody] int[][] move)
     {
       if (!GameConnector.ActiveGames.TryGetValue(gameId, out var activeGame))
       {
         return NotFound("Game session not found.");
       }
 
-      var gameSession = activeGame.GetGameSession ?? throw new InvalidOperationException("Game session has not started yet.");
-      var playerColor = activeGame.Players.FirstOrDefault(p => p.Key == User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value).Value;
+      if (move == null || move.Length == 0 || move.Any(m => m.Length != 2))
+      {
+        return BadRequest("Invalid move format.");
+      }
 
-      var validMove = gameSession.MakeMove(move);
+      var gameSession = activeGame.GetGameSession ?? throw new InvalidOperationException("Game session has not started yet.");
+      
+      var playerColor = activeGame.Players.FirstOrDefault(p => p.Key == User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value).Value;
+      if (playerColor != gameSession.CurrentPlayer)
+      {
+        return BadRequest("It's not the player's turn.");
+      }
+
+      var validMove = gameSession.MakeMove([.. move.Select(m => (m[0], m[1]))]);
       if (!validMove)
       {
         return BadRequest("Invalid move.");
