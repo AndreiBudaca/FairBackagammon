@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 using System;
 using System.Text;
 
@@ -40,9 +40,19 @@ namespace FairBackgammon.Api
           Description = "Paste your JWT here (without the 'Bearer ' prefix)."
         });
 
-        options.AddSecurityRequirement((document) => new OpenApiSecurityRequirement()
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
         {
-          [new OpenApiSecuritySchemeReference("Bearer", document)] = ["readAccess", "writeAccess"]
+          {
+            new OpenApiSecurityScheme
+            {
+              Reference = new OpenApiReference
+              {
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+              }
+            },
+            Array.Empty<string>()
+          }
         });
       });
 
