@@ -36,6 +36,11 @@ namespace FairBackgammon.GameLogic.Sessions
         throw new InvalidOperationException("Player has already rolled. Please end the turn before rolling again.");
       }
 
+      if (GetWinner() != null)
+      {
+        throw new InvalidOperationException("Game is already over.");
+      }
+
       var diceValue = _dice.Roll();
       var validMoves = moveValidator.LoadValidMoves(_board, diceValue, CurrentPlayer);
 

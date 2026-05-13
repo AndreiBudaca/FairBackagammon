@@ -79,7 +79,17 @@ namespace FairBackgammon.Api.Controllers
         return NotFound("Game session not found.");
       }
 
-      var gameSession = activeGame.GetGameSession ?? throw new InvalidOperationException("Game session has not started yet.");
+      if (activeGame.Players.Count < 2 || activeGame.GetGameSession == null)
+      {
+        return BadRequest("Game didn't start yet. Waiting for another player to join.");
+      }
+
+      if (activeGame.GetGameSession.BoardState.Winner != null)
+      {
+        return BadRequest("Game is already over.");
+      }
+
+      var gameSession = activeGame.GetGameSession;
 
       var rollResult = gameSession.Roll();
 
@@ -103,8 +113,18 @@ namespace FairBackgammon.Api.Controllers
         return BadRequest("Invalid move format.");
       }
 
-      var gameSession = activeGame.GetGameSession ?? throw new InvalidOperationException("Game session has not started yet.");
-      
+      if (activeGame.Players.Count < 2 || activeGame.GetGameSession == null)
+      {
+        return BadRequest("Game didn't start yet. Waiting for another player to join.");
+      }
+
+      if (activeGame.GetGameSession.BoardState.Winner != null)
+      {
+        return BadRequest("Game is already over.");
+      }
+
+      var gameSession = activeGame.GetGameSession;      
+
       var playerColor = activeGame.Players.FirstOrDefault(p => p.Key == User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value).Value;
       if (playerColor != gameSession.CurrentPlayer)
       {
