@@ -19,7 +19,7 @@ namespace FairBackgammon.Api.Controllers
   public sealed class GameSessionsController : ControllerBase
   {
     [HttpPost]
-    public ActionResult CreateGameSession([FromBody] List<PointState> initialBoard)
+    public ActionResult CreateGameSession([FromBody] List<PointState>? initialBoard)
     {
       var gameId = Guid.NewGuid().ToString();
       initialBoard ??= [];
